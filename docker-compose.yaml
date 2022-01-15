@@ -1,0 +1,39 @@
+services:
+    odoo15:
+      image: odoo:15
+      volumes:
+        - /tmp/odoodata:/var/lib/odoo
+      depends_on:
+        - db
+      links:
+        - db
+      networks:
+        - odoonet
+    db:
+      image: postgres:alpine3.15
+      environment:
+        POSTGRES_DB: postgres
+        POSTGRES_USER: odoo
+        POSTGRES_PASSWORD: odoo
+      networks:
+        - odoonet
+    trafeik:
+      image: traefik:v2.5.6
+      volumes:
+        - ./traefik.yml:/etc/traefik/traefik.yml
+        - /var/run/docker.sock:/var/run/docker.sock
+      ports:
+        - "80:80"
+        - "8080:8080"
+        - "443:443"
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.dashboard.rule=Host(`docker.localhost`)"
+        - "traefik.http.routers.dashboard.service=api@internal"
+        - "traefik.http.routers.dashboard.middlewares=auth"
+        - "traefik.http.middlewares.auth.basicauth.users=user:$$apr1$$q8eZFHjF$$Fvmkk//V6Btlaf2i/ju5n/" # user/password
+
+      networks:
+        - odoonet
+networks:
+  odoonet:
